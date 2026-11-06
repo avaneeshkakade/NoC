@@ -1,6 +1,6 @@
 # Cycle-Accurate 2D-Mesh Network-on-Chip (NoC) Performance Simulator
 
-A cycle-accurate simulator, written in C++17 with no external dependencies, that measures latency, throughput and congestion behavior of a 4×4 mesh Network-on-Chip under uniform-random and hotspot traffic. Python scripts validate the results against analytical models and generate the plots.
+A cycle-accurate simulator, written in C++17 with no external dependencies, that measures latency, throughput and congestion behavior of a 4×4 mesh Network-on-Chip under uniform-random and hotspot traffic. A short Python script checks the results against analytical models.
 
 ## What is modeled
 
@@ -30,43 +30,41 @@ A cycle-accurate simulator, written in C++17 with no external dependencies, that
 |---|---|---|---|
 | Mean hops, uniform traffic (8/3) | 2.6667 | 2.6630 | 0.14% |
 | Zero-load latency (hops + 1) | 3.6667 cycles | 3.6801 cycles (λ = 0.02) | 0.37% |
-| Hotspot saturation knee | λ = 1 / 6.6 ≈ 0.1515 | throughput plateaus at ≈ 0.15–0.16 | n/a |
+| Hotspot saturation knee | λ = 1 / 6.6 ≈ 0.1515 | latency passes 2× its low-load value between λ = 0.14 and 0.16 | n/a |
+| Flit conservation (offered vs retired) | equal | worst mismatch 0.45% over 38 runs | n/a |
 
 **Hotspot bound:** each of the 15 other nodes sends 0.40 + 0.60/15 = 0.44 of its traffic to node (2,2), whose single ejection port accepts 1 flit/cycle. Saturation occurs when 15 × 0.44 × λ = 1, so λ ≈ 0.1515.
 
 ### Behavior across load
 
-| Injection rate λ | Hotspot latency (cycles) |
-|---|---|
-| 0.02 | 3.49 |
-| 0.12 | 4.13 |
-| 0.14 | 6.33 |
-| 0.16 | 12.52 |
-| 0.38 | 41.09 |
+| Injection rate λ | Uniform latency (cycles) | Hotspot latency (cycles) | Hotspot throughput |
+|---|---|---|---|
+| 0.02 | 3.68 | 3.49 | 0.0195 |
+| 0.14 | 3.80 | 6.33 | 0.1388 |
+| 0.16 | 3.81 | 12.52 | 0.1504 |
+| 0.20 | 3.89 | 25.06 | 0.1547 |
+| 0.38 | 4.28 | 41.09 | 0.1600 |
 
-- **Uniform:** throughput tracks offered load across the whole sweep and latency stays under 4.5 cycles. The mesh does not saturate within λ ≤ 0.40.
-- **Hotspot:** latency is flat until about λ = 0.14, then rises about 12× (3.5 to 41 cycles) while throughput stays near 0.15. Once the hotspot's buffers fill, backpressure propagates upstream and flits not even headed for the hotspot get stuck behind those that are (head-of-line blocking and tree saturation).
+- **Uniform:** throughput tracks offered load across the whole sweep and latency rises only from 3.68 to 4.28 cycles. The mesh does not saturate within λ ≤ 0.40.
+- **Hotspot:** latency is flat until about λ = 0.14, then rises about 12× (3.5 to 41 cycles) while throughput stays near 0.15–0.16. Once the hotspot's buffers fill, backpressure propagates upstream and flits not even headed for the hotspot get stuck behind those that are (head-of-line blocking and tree saturation).
 
-Plots are in [`scripts/plots/`](scripts/plots): throughput vs injection, latency vs injection, latency vs throughput, hop count, a combined dashboard, the topology diagram, and the traffic heatmap.
+Plots generated from the CSV with matplotlib are in [`plots/`](plots): throughput vs injection, latency vs injection, latency vs throughput, hop count, and a combined dashboard.
 
 ## Build and run
 
-Requires a C++17 compiler (g++ or clang++) and Python 3.
+Requires a C++17 compiler (g++ or clang++). The validation script needs Python 3 with pandas.
 
 ```bash
 # build and run the sweep from the repo root (writes noc_performance_sweep.csv to the current directory)
 g++ -std=c++17 -O2 src/noc_sim.cpp -o noc_sim
 ./noc_sim                     # Windows: noc_sim.exe
 
-# analysis, checks and plots
-pip install -r requirements.txt
+# check the results against the analytical model
+pip install pandas
 python scripts/analytical_validation.py
-python scripts/run_tests.py
-python scripts/plot_performance.py
-python scripts/visualize_topology_and_hotspot.py
 ```
 
-Rerunning `./noc_sim` regenerates the committed CSV exactly (fixed seed).
+Rerunning `./noc_sim` regenerates the committed CSV exactly (fixed seed). The validation script prints PASS or FAIL for each check, computed from the data, and exits non-zero if any check fails.
 
 ## Repository layout
 
@@ -74,9 +72,7 @@ Rerunning `./noc_sim` regenerates the committed CSV exactly (fixed seed).
 src/noc_sim.cpp                       simulator and sweep driver
 noc_performance_sweep.csv             sweep output used for all results
 scripts/analytical_validation.py      compares results with the analytical models
-scripts/run_tests.py                  sanity checks on the sweep output
-scripts/plot_performance.py           performance figures
-scripts/visualize_topology_and_hotspot.py   topology diagram and load heatmap
+plots/                                figures generated from the CSV
 ```
 
 ## Design notes
@@ -93,12 +89,7 @@ scripts/visualize_topology_and_hotspot.py   topology diagram and load heatmap
 - Latency is reported as a mean only (no p50/p99).
 - Self-addressed hotspot injections at node (2,2) are skipped.
 - The uniform workload does not reach saturation within the swept range.
-- `run_tests.py` checks properties of the output CSV (conservation, bounds, trends), not the simulator internals.
 
 ## Possible extensions
 
 Count rejected injections and add a bounded source queue, report p50/p99 latency, add virtual channels and measure their effect on hotspot latency, extend the sweep to find the uniform saturation point, multi-flit wormhole packets, additional traffic patterns (transpose, bit-complement), and adaptive routing.
-
-## Author
-
-Avaneesh Kakade, COEP Technological University
