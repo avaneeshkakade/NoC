@@ -18,7 +18,7 @@ A cycle-accurate simulator, written in C++17 with no external dependencies, that
 
 - **Uniform random:** each node injects with probability `λ` per cycle to a random other node.
 - **Hotspot:** 40% of injections target node (2,2), the rest are uniform.
-- **Sweep:** `λ` from 0.02 to 0.40 in steps of 0.02, for both workloads (38 points).
+- **Sweep:** `λ` from 0.02 to 0.38 in steps of 0.02, 19 rates per workload (38 points).
 - **Per point:** 500 warm-up cycles (discarded), then 2500 measured cycles, fixed seed 1337, so results are exactly reproducible.
 - **Metrics:** throughput (retired flits / cycle / node), mean latency (cycles from entering the local injection buffer until ejection), mean hop count.
 
@@ -45,7 +45,7 @@ A cycle-accurate simulator, written in C++17 with no external dependencies, that
 | 0.20 | 3.89 | 25.06 | 0.1547 |
 | 0.38 | 4.28 | 41.09 | 0.1600 |
 
-- **Uniform:** throughput tracks offered load across the whole sweep and latency rises only from 3.68 to 4.28 cycles. The mesh does not saturate within λ ≤ 0.40.
+- **Uniform:** throughput tracks offered load across the whole sweep and latency rises only from 3.68 to 4.28 cycles. The mesh does not saturate within the swept range (λ ≤ 0.38).
 - **Hotspot:** latency is flat until about λ = 0.14, then rises about 12× (3.5 to 41 cycles) while throughput stays near 0.15–0.16. Once the hotspot's buffers fill, backpressure propagates upstream and flits not even headed for the hotspot get stuck behind those that are (head-of-line blocking and tree saturation).
 
 Plots generated from the CSV with matplotlib are in [`plots/`](plots): throughput vs injection, latency vs injection, latency vs throughput, hop count, and a combined dashboard.
@@ -78,7 +78,7 @@ plots/                                figures generated from the CSV
 ## Design notes
 
 - **Deadlock freedom:** XY routing forbids Y-to-X turns, so no cyclic channel dependency can form on a mesh and virtual channels are not needed to avoid deadlock.
-- **Two-phase clock:** all routers decide in Phase 1 using the state at the start of the cycle, and transfers are applied together in Phase 2. This avoids a flit moving several hops in one cycle depending on router evaluation order.
+- **Two-phase clock:** in Phase 1 each router arbitrates and dequeues flits, and arrivals at neighboring routers are committed together in Phase 2. This prevents a flit from moving several hops in one cycle. Dequeues take effect immediately, so same-cycle credit timing depends slightly on router evaluation order.
 - **Why the knee is sharp:** below saturation the hotspot's input buffers drain faster than they fill, so queuing delay is small. Once arrivals exceed the ejection rate, buffers stay full and latency is set by queue depth and upstream stalls rather than by distance.
 
 ## Limitations
@@ -88,6 +88,7 @@ plots/                                figures generated from the CSV
 - Latency is measured from entry into the local injection buffer. If that buffer is full, the injection is skipped and not queued, so source queueing delay is excluded and the `OfferedFlits` column counts accepted injections, not attempted ones.
 - Latency is reported as a mean only (no p50/p99).
 - Self-addressed hotspot injections at node (2,2) are skipped.
+- An input FIFO can send more than one flit in a cycle if consecutive flits head to different outputs (a real single-crossbar-port router sends one). A strict one-flit-per-input variant shifts latencies by a few cycles near saturation but leaves the knee and plateau unchanged.
 - The uniform workload does not reach saturation within the swept range.
 
 ## Possible extensions
