@@ -19,6 +19,7 @@ noc
 *.vcd
 *.trace
 *.csv
+!noc_performance_sweep.csv
 
 # Draft / verbose reference files
 noc_sim.cpp

@@ -48,7 +48,7 @@ A cycle-accurate simulator, written in C++17 with no external dependencies, that
 - **Uniform:** throughput tracks offered load across the whole sweep and latency rises only from 3.68 to 4.28 cycles. The mesh does not saturate within the swept range (λ ≤ 0.38).
 - **Hotspot:** latency is flat until about λ = 0.14, then rises about 12× (3.5 to 41 cycles) while throughput stays near 0.15–0.16. Once the hotspot's buffers fill, backpressure propagates upstream and flits not even headed for the hotspot get stuck behind those that are (head-of-line blocking and tree saturation).
 
-Plots generated from the CSV with matplotlib are in [`plots/`](plots): throughput vs injection, latency vs injection, latency vs throughput, hop count, and a combined dashboard.
+Plots generated from the CSV with matplotlib are in [`scripts/plots/`](scripts/plots): throughput vs injection, latency vs injection, latency vs throughput, hop count, and a combined dashboard.
 
 ## Build and run
 
@@ -56,23 +56,23 @@ Requires a C++17 compiler (g++ or clang++). The validation script needs Python 3
 
 ```bash
 # build and run the sweep from the repo root (writes noc_performance_sweep.csv to the current directory)
-g++ -std=c++17 -O2 src/noc_sim.cpp -o noc_sim
-./noc_sim                     # Windows: noc_sim.exe
+g++ -std=c++17 -O2 src/noc.cpp -o noc
+./noc                     # Windows: noc.exe
 
 # check the results against the analytical model
 pip install pandas
 python scripts/analytical_validation.py
 ```
 
-Rerunning `./noc_sim` regenerates the committed CSV exactly (fixed seed). The validation script prints PASS or FAIL for each check, computed from the data, and exits non-zero if any check fails.
+Rerunning `./noc` regenerates the committed CSV exactly (fixed seed). The validation script prints PASS or FAIL for each check, computed from the data, and exits non-zero if any check fails.
 
 ## Repository layout
 
 ```
-src/noc_sim.cpp                       simulator and sweep driver
+src/noc.cpp                       simulator and sweep driver
 noc_performance_sweep.csv             sweep output used for all results
 scripts/analytical_validation.py      compares results with the analytical models
-plots/                                figures generated from the CSV
+scripts/plots/                                figures generated from the CSV
 ```
 
 ## Design notes
