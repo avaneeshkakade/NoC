@@ -1,0 +1,25 @@
+# Build directories & binaries
+build/
+cmake-build-*/
+bin/
+*.o
+*.a
+*.so
+*.out
+noc
+
+# IDE configs
+.idea/
+.vscode/
+*.swp
+*~
+
+# Test outputs & logs
+*.log
+*.vcd
+*.trace
+*.csv
+
+# Draft / verbose reference files
+noc_sim.cpp
+ignore/
